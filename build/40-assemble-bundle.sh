@@ -25,10 +25,10 @@ mkdir -p "$OUT"
 cp -a "$MROOT" "$OUT/mingw64"
 
 say "Copying MSYS shell utils (bash + coreutils for verilated.mk) → $OUT/usr"
+# Only usr/bin: the proven lean bundle ships no usr/lib or usr/share and works,
+# so copying them just bloats the bundle (~34 MB uncompressed).
 mkdir -p "$OUT/usr"
 cp -a /usr/bin "$OUT/usr/bin"
-[ -d /usr/lib ]   && cp -a /usr/lib   "$OUT/usr/lib"   || true
-[ -d /usr/share ] && cp -a /usr/share "$OUT/usr/share" || true
 
 # --- bake cocotb (+ VPIs) into the bundle Python ---
 PYV="$("$OUT/mingw64/bin/python.exe" -c 'import sys;print("%d.%d"%sys.version_info[:2])')"
