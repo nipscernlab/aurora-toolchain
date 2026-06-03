@@ -22,12 +22,22 @@ mkdir -p "$(dirname "$OUT")"
 OUT="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
 
 rm -f "$OUT"
+OUTW="$(cygpath -w "$OUT" 2>/dev/null || echo "$OUT")"
 say "Zipping $ROOT → $OUT"
-if command -v 7z >/dev/null 2>&1; then
-  ( cd "$parent" && 7z a -tzip -mx=5 "$(cygpath -w "$OUT" 2>/dev/null || echo "$OUT")" msys )
+
+# Prefer a real compressor (Compress-Archive is ~1.8:1; 7z/zip give ~3:1).
+SEVENZ=""
+for c in 7z 7zz 7za; do command -v "$c" >/dev/null 2>&1 && { SEVENZ="$c"; break; }; done
+if [ -n "$SEVENZ" ]; then
+  say "compressor: $SEVENZ (zip, mx=9)"
+  ( cd "$parent" && "$SEVENZ" a -tzip -mx=9 "$OUTW" msys )
+elif command -v zip >/dev/null 2>&1; then
+  say "compressor: zip -9"
+  ( cd "$parent" && zip -r -q -9 "$OUTW" msys )
 else
+  say "compressor: PowerShell Compress-Archive (poor ratio — install 7zip/zip)"
   ( cd "$parent" && powershell -NoProfile -Command \
-      "Compress-Archive -Path 'msys' -DestinationPath '$(cygpath -w "$OUT" 2>/dev/null || echo "$OUT")' -Force" )
+      "Compress-Archive -Path 'msys' -DestinationPath '$OUTW' -Force" )
 fi
 say "Done: $OUT ($(du -m "$OUT" | cut -f1) MB)"
 echo "  Publish:  gh release create <tag> '$OUT' --repo nipscernlab/aurora-toolchain --prerelease"

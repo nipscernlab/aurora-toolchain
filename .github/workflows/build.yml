@@ -35,11 +35,12 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          # base tools the build scripts need (git/tar/unzip/zip + 7zip for
-          # good compression in 60-package; the toolchain is installed by
-          # 10-install-packages.sh).
+          # base tools the build scripts need. NO git: checkout uses the
+          # runner's git, and the MSYS git package drags openssh/heimdal/~30
+          # perl-CPAN modules that would leak into the bundle via the /usr copy.
+          # 7zip gives good compression in 60-package.
           install: >-
-            git tar unzip zip mingw-w64-x86_64-7zip
+            tar unzip zip mingw-w64-x86_64-7zip
 
       - name: Install pinned toolchain
         run: bash build/10-install-packages.sh
