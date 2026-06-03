@@ -44,12 +44,12 @@ jobs:
         run: bash build/10-install-packages.sh
 
       - name: Assert versions match manifest
-        # Guardrail: fail if MSYS2 floated a pinned package off the manifest.
+        # Guardrail: fail if a pinned package drifted off the manifest.
         run: |
           set -e
           for kv in "gcc:gcc" "gcc-libs:gcc-libs" "python:python"; do
             key="${kv%%:*}"; pkg="${kv##*:}"
-            want="$(awk -F'=' "/^${key}[[:space:]]*=/{gsub(/[# ].*/,\"\",\$2);gsub(/ /,\"\",\$2);print \$2;exit}" manifest.txt)"
+            want="$(sed -nE "s/^${key}[[:space:]]*=[[:space:]]*([^[:space:]#]+).*/\1/p" manifest.txt | head -1)"
             got="$(pacman -Q mingw-w64-x86_64-$pkg | awk '{print $2}')"
             echo "$pkg: want=$want got=$got"
             [ "$want" = "$got" ] || { echo "::error::$pkg drifted ($got != $want)"; exit 1; }

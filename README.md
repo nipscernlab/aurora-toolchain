@@ -43,10 +43,12 @@ See [`manifest.txt`](manifest.txt) for exact versions. The two hard pins:
 Everything else (iverilog 13, yosys 0.56, verilator 5.048, ccache, perl, make)
 tracks the latest MSYS2 — recorded in the manifest for reproducibility.
 
-> **Reproducibility caveat:** MSYS2 is rolling-release. To rebuild byte-for-byte
-> later, pin the exact package versions in `manifest.txt` **and** archive the
-> `.pkg.tar.zst` files (CI uploads them as a build artifact). Without that, a
-> rebuild pulls whatever MSYS2 ships that day.
+> **Reproducibility:** MSYS2 is rolling-release and **already dropped** gcc 15 /
+> python 3.12 from the live repo (it serves gcc16/py3.14 now). So the pinned
+> `.pkg.tar.zst` are archived in the **`pins-v1` Release** and installed via
+> `pacman -U` (see `build/10-install-packages.sh`); only the floating tools come
+> from the live repo. To move the pins, upload new `.pkg.tar.zst` to a `pins-vN`
+> release and point `PINS_TAG` at it.
 
 ## The cocotb-on-Verilator recipe (the hard part)
 
