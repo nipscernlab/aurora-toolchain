@@ -10,6 +10,7 @@
 # =============================================================================
 set -uo pipefail
 B="${1:?usage: 50-smoke.sh <bundle-root>}"
+B="$(cd "$B" && pwd)"   # absolute: the cocotb flow cd's into a tmp dir before running $PY
 W="$(mktemp -d)"; WM="$(cygpath -m "$W" 2>/dev/null || echo "$W")"; BM="$(cygpath -m "$B" 2>/dev/null || echo "$B")"
 PY="$B/mingw64/bin/python.exe"
 pass=0; fail=0
