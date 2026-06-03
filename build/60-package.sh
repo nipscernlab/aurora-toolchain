@@ -17,6 +17,10 @@ say() { printf '\n==> %s\n' "$*"; }
 parent="$(dirname "$ROOT")"; name="$(basename "$ROOT")"
 [ "$name" = "msys" ] || { echo "ERROR: bundle dir must be named 'msys' (got '$name')" >&2; exit 1; }
 
+# absolute OUT — we cd into $parent below, so a relative OUT would resolve wrong.
+mkdir -p "$(dirname "$OUT")"
+OUT="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
+
 rm -f "$OUT"
 say "Zipping $ROOT → $OUT"
 if command -v 7z >/dev/null 2>&1; then

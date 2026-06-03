@@ -68,10 +68,7 @@ jobs:
         run: bash build/50-smoke.sh dist/msys
 
       - name: Package
-        run: |
-          tag="${{ github.event.inputs.tag }}"
-          bash build/60-package.sh dist/msys "dist/aurora-${tag/msys-/msys-}.zip" || \
-          bash build/60-package.sh dist/msys "dist/aurora-${tag}.zip"
+        run: bash build/60-package.sh dist/msys "dist/aurora-${{ github.event.inputs.tag }}.zip"
 
       - name: Archive the exact MSYS2 packages used (reproducibility)
         run: |
