@@ -35,10 +35,11 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          # base tools the build scripts need (git/tar/unzip/zip + the
-          # toolchain is installed by 10-install-packages.sh).
+          # base tools the build scripts need (git/tar/unzip/zip + 7zip for
+          # good compression in 60-package; the toolchain is installed by
+          # 10-install-packages.sh).
           install: >-
-            git tar unzip zip
+            git tar unzip zip mingw-w64-x86_64-7zip
 
       - name: Install pinned toolchain
         run: bash build/10-install-packages.sh
