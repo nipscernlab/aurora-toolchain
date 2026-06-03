@@ -13,7 +13,9 @@ B="${1:?usage: 50-smoke.sh <bundle-root>}"
 W="$(mktemp -d)"; WM="$(cygpath -m "$W" 2>/dev/null || echo "$W")"; BM="$(cygpath -m "$B" 2>/dev/null || echo "$B")"
 PY="$B/mingw64/bin/python.exe"
 pass=0; fail=0
-ck(){ if echo "$2" | grep -q "$3"; then echo "  PASS  $1"; pass=$((pass+1)); else echo "  FAIL  $1"; fail=$((fail+1)); fi; }
+ck(){ if echo "$2" | grep -q "$3"; then echo "  PASS  $1"; pass=$((pass+1));
+      else echo "  FAIL  $1"; fail=$((fail+1));
+           printf -- '----- %s output -----\n%s\n----------------------\n' "$1" "$(echo "$2" | tail -30)"; fi; }
 
 cat > "$W/leaf.v" <<'V'
 module leaf(input a,input b,output y); assign y=a&b; endmodule
