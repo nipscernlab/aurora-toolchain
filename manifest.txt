@@ -1,0 +1,38 @@
+# aurora-toolchain — pinned version manifest
+#
+# Single source of truth for the unified mingw bundle (aurora-msys-vN.zip).
+# MSYS2 is rolling-release: WITHOUT these pins a rebuild pulls whatever is
+# current and can break (see the gcc16 / python3.14 notes below). The build
+# scripts read these; CI installs exactly these; bumping a line here + re-running
+# CI is how the bundle evolves deliberately (not by accidental drift).
+#
+# Format:  <key> = <exact MSYS2 pkg version | tool version>
+
+# --- PINNED (do NOT float — newer is known-broken for our flow) ---
+gcc            = 15.1.0-5     # mingw-w64-x86_64-gcc      (16.1.0-5 ships a broken
+gcc-libs       = 15.1.0-5     # mingw-w64-x86_64-gcc-libs  libstdc++: std::string
+                              #   move ctor undefined → cocotb VPI fails to link.
+                              #   g++ runs at RUNTIME (verilator compiles the model),
+                              #   so the bundle MUST carry a working g++.
+python         = 3.12.11-1    # mingw-w64-x86_64-python   (3.14 breaks the cocotb
+                              #   build; cocotb links -lpython3.X so the bundle
+                              #   Python minor must match what cocotb was built against)
+
+# --- FLOATING (track latest MSYS2; pinned here only to record what shipped) ---
+verilator      = 5.048-1      # mingw-w64-x86_64-verilator
+iverilog       = 1~13.0-2     # mingw-w64-x86_64-iverilog  (was 12 in the old bundle;
+                              #   13 is stricter — needs HDL that declares before use)
+yosys          = 0.56-4       # mingw-w64-x86_64-yosys     (install with
+                              #   --assume-installed mingw-w64-x86_64-ghdl to skip the
+                              #   VHDL frontend, which would drag gcc16 via gcc-ada)
+ccache         = 4.13.6-2     # mingw-w64-x86_64-ccache
+perl           = 5.38.5-1     # mingw-w64-x86_64-perl      (verilator's wrapper)
+make           = 4.4.1-4      # mingw-w64-x86_64-make
+
+# --- PyPI (installed into the bundle Python) ---
+cocotb         = 2.0.1        # built from sdist; VPI compiled by hand (posix gate)
+find_libpython = 0.5.1        # runtime dep of cocotb_tools.runner
+
+# --- Produced artifact ---
+bundle_tag      = msys-v1            # GitHub Release tag
+bundle_filename = aurora-msys-v1.zip # asset name; extracts to components/Packages/msys/

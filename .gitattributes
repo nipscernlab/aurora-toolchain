@@ -1,0 +1,6 @@
+# Shell scripts + CI run in MSYS2/Linux — force LF so bash doesn't choke on \r.
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+manifest.txt text eol=lf
+*.md        text eol=lf

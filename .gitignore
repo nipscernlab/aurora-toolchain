@@ -1,0 +1,10 @@
+# Build outputs — the bundle + zips are published as Releases, never committed.
+dist/
+*.zip
+*.pkg.tar.zst
+
+# cocotb build venv (created by 20-build-cocotb-vpi.sh)
+aurora-cocotb-venv/
+
+# scratch
+*.log

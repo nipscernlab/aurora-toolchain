@@ -1,0 +1,100 @@
+name: Build toolchain bundle
+
+# Reproducibly builds aurora-msys-<tag>.zip in a clean MSYS2/mingw64 runner and
+# publishes it as a GitHub Release. This is the push-button version of the
+# pipeline in README.md — the artifact stops depending on any one dev's machine.
+#
+# Manual trigger: Actions → "Build toolchain bundle" → Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (must match manifest.txt bundle_tag, e.g. msys-v1)'
+        required: true
+        default: 'msys-v1'
+      prerelease:
+        description: 'Publish as pre-release'
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write   # create the Release
+    defaults:
+      run:
+        shell: msys2 {0}   # all `run:` steps execute in the MINGW64 shell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup MSYS2 (MINGW64)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          # base tools the build scripts need (git/tar/unzip/zip + the
+          # toolchain is installed by 10-install-packages.sh).
+          install: >-
+            git tar unzip zip
+
+      - name: Install pinned toolchain
+        run: bash build/10-install-packages.sh
+
+      - name: Assert versions match manifest
+        # Guardrail: fail if MSYS2 floated a pinned package off the manifest.
+        run: |
+          set -e
+          for kv in "gcc:gcc" "gcc-libs:gcc-libs" "python:python"; do
+            key="${kv%%:*}"; pkg="${kv##*:}"
+            want="$(awk -F'=' "/^${key}[[:space:]]*=/{gsub(/[# ].*/,\"\",\$2);gsub(/ /,\"\",\$2);print \$2;exit}" manifest.txt)"
+            got="$(pacman -Q mingw-w64-x86_64-$pkg | awk '{print $2}')"
+            echo "$pkg: want=$want got=$got"
+            [ "$want" = "$got" ] || { echo "::error::$pkg drifted ($got != $want)"; exit 1; }
+          done
+
+      - name: Build cocotb Verilator VPI
+        run: bash build/20-build-cocotb-vpi.sh
+
+      - name: Assemble bundle
+        run: bash build/40-assemble-bundle.sh dist/msys
+
+      - name: Trim bundle
+        run: bash build/45-trim-bundle.sh dist/msys
+
+      - name: Smoke test (4 flows — gate)
+        run: bash build/50-smoke.sh dist/msys
+
+      - name: Package
+        run: |
+          tag="${{ github.event.inputs.tag }}"
+          bash build/60-package.sh dist/msys "dist/aurora-${tag/msys-/msys-}.zip" || \
+          bash build/60-package.sh dist/msys "dist/aurora-${tag}.zip"
+
+      - name: Archive the exact MSYS2 packages used (reproducibility)
+        run: |
+          mkdir -p dist/pkgcache
+          cp -f /var/cache/pacman/pkg/mingw-w64-x86_64-{gcc,gcc-libs,python,verilator,iverilog,yosys,ccache,perl,make}-*.pkg.tar.zst dist/pkgcache/ 2>/dev/null || true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aurora-msys-bundle
+          path: |
+            dist/*.zip
+            dist/pkgcache/*
+
+      - name: Publish Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ github.event.inputs.tag }}"
+          pre=""; [ "${{ github.event.inputs.prerelease }}" = "true" ] && pre="--prerelease"
+          zip="$(ls dist/aurora-*.zip | head -1)"
+          gh release view "$tag" >/dev/null 2>&1 \
+            && gh release upload "$tag" "$zip" --clobber \
+            || gh release create "$tag" "$zip" $pre --title "AURORA mingw bundle $tag" \
+                 --notes "Unified pinned MSYS2 toolchain (iverilog/yosys/verilator/gcc15/python3.12+cocotb, both VPIs). See manifest.txt."
